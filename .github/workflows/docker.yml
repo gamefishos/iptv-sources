@@ -1,27 +1,46 @@
-name: docker image
+name: update script
 
 on:
-  push:
-    branches: [main]
+    push:
+        branches: [main]
 
 jobs:
-  buildx:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - # Add support for more platforms with QEMU (optional)
-        # https://github.com/docker/setup-qemu-action
-        name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-      - name: Login to DockerHub
-        uses: docker/login-action@v2
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Build image
-        run: |
-          docker buildx build -t herberthe0229/iptv-sources:latest --platform=linux/arm64,linux/amd64,linux/arm/v8,linux/arm/v7 . --push
+    build:
+        runs-on: ubuntu-latest
 
+        strategy:
+            matrix:
+                node-version: [18.x]
+                # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
+
+        steps:
+            - uses: actions/checkout@v3
+            - name: Use Node.js ${{ matrix.node-version }}
+              uses: actions/setup-node@v3
+              with:
+                  node-version: ${{ matrix.node-version }}
+                  cache: "npm"
+            - name: install yarn
+              run: npm install yarn -g
+            - run: yarn install
+            - run: yarn build
+            - run: yarn m3u
+-           - run: yarn matrix
+
+            - name: "Jekyll theme"
+              run: mv ./_config.temp.yml ./m3u/_config.yml
+
+            - name: Deploy
+              uses: peaceiris/actions-gh-pages@v3
+              with:
+                  github_token: ${{ secrets.GITHUB_TOKEN }}
+                  publish_dir: ./m3u
+                  enable_jekyll: true
+-                  cname: m3u.ibert.me
++                 cname: <your-own-domain>
+
+-           - name: discord
+-              uses: sebastianpopp/discord-action@releases/v2
+-              with:
+-                  webhook: ${{ secrets.DISCORD_WEBHOOK }}
+-                  message: ${{ github.repository }} has been successfullly updated, see https://m3u.ibert.me to get more.
