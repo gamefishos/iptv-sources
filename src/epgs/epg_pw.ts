@@ -75,9 +75,9 @@ function genTvBoxChannelName(originalString: string): string {
   const name = originalString.toUpperCase().replace(/^CCTV-(\d)/, 'CCTV$1');
 
   // CCTV-4 多语言：仅 (亚洲) 归一为 CCTV4，(美洲)/(欧洲) 保留地区
-  const region = name.match(/^CCTV4\s*\((亚洲|美洲|欧洲)\)/);
+  const region = name.match(/^CCTV4\s*\(?(亚洲|美洲|欧洲)\)?/);
   if (region) {
-    return region[1] === '亚洲' ? 'CCTV4' : `CCTV4${region[1]}`;
+    return region[1] === '亚洲' ? 'CCTV4' : name;
   }
 
   // CCTV5+ 等：保留 +
